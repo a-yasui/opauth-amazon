@@ -1,0 +1,23 @@
+{
+        "name": "opauth/amazon",
+        "description": "Amazon strategy for Opauth",
+        "keywords": ["authentication","auth","amazon"],
+        "homepage": "http://opauth.org",
+        "license": "MIT",
+        "authors": [
+                {
+                        "name": "Atsushi Yasui",
+                        "email": "a.yasui@gmail.com",
+                        "homepage": "https://github.com/a-yasui/"
+                }
+        ],
+        "require": {
+                "php": ">=5.2.0",
+                "opauth/opauth": ">=0.2.0"
+        },
+        "autoload": {
+                "psr-0": {
+                        "": "."
+                }
+        }
+}
