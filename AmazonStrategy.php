@@ -62,38 +62,49 @@ class AmazonStrategy extends OpauthStrategy{
      * Internal callback, after OAuth
      */
     public function oauth2callback(){
-        if (array_key_exists('code', $_GET) && !empty($_GET['code'])){
-            $code = $_GET['code'];
+        if (array_key_exists('access_token', $_GET) && !empty($_GET['access_token'])){
+            $access_token = $_GET['access_token'];
             $url = 'https://api.amazon.com/auth/o2/tokeninfo';
             $params = array(
                 'grant_type'=>'authorization_code',
-                'code' => $code,
+                'access_token' => $access_token,
                 'client_id' => $this->strategy['client_id'],
                 'client_secret' => $this->strategy['client_secret'],
                 'redirect_uri' => $this->strategy['redirect_uri'],
                 'grant_type' => 'authorization_code'
             );
-            $response = $this->serverPost($url, $params, null, $headers);
+            $response = $this->serverGet($url, $params, null, $headers);
+            $results = json_decode($response);
             
-            $results = json_decode($response);error_log($result);
-            
-            if (!empty($results) && !empty($results->access_token)){
-                $userinfo = $this->userinfo($results->access_token);
+            if (!empty($results) && !empty($results->aud)){
+                if ($results->aud != $this->strategy['client_id']) {
+                    $error = array(
+                        'provider' => 'Amazon',
+                        'code' => 'access_token_error',
+                        'message' => 'Failed when attempting to not match access token',
+                        'raw' => array(
+                            'response' => $response,
+                            'headers' => $headers
+                        )
+                    );
+                    error_log("[AmazonStrategy.php][oauth2callback] Not set Access Token");
+                    $this->errorCallback($error);
+                }
+
+                $userinfo = $this->userinfo($access_token);
                 $this->auth = array(
                     'provider' => 'Amazon',
                     'uid' => $userinfo->user_id,
                     'info' => array(
-                        'name' => $userinfo->entry->displayName,
-                        'image' => $userinfo->entry->thumbnailUrl
+                        'name' => $userinfo->name,
+                        'image' => "",
                     ),
                     'credentials' => array(
-                        'token' => $results->access_token,
+                        'token' => $access_token,
                         'expires' => date('c', time() + $results->expires_in)
                     ),
                     'raw' => $userinfo
                 );
-                
-                // if (!empty($userinfo->entry->profileUrl)) $this->auth['info']['urls']['amazon'] = $userinfo->entry->profileUrl;
                 
                 $this->callback();
             }
@@ -107,7 +118,6 @@ class AmazonStrategy extends OpauthStrategy{
                         'headers' => $headers
                     )
                 );
-
                 $this->errorCallback($error);
             }
         }
@@ -117,7 +127,6 @@ class AmazonStrategy extends OpauthStrategy{
                 'code' => 'oauth2callback_error',
                 'raw' => $_GET
             );
-            
             $this->errorCallback($error);
         }
     }
@@ -129,17 +138,14 @@ class AmazonStrategy extends OpauthStrategy{
      * @return array Parsed JSON results
      */
     private function userinfo($access_token){
-        $headers = array(
-            'Authorization' => 'bearer ' . $access_token
-        );
-
-        $userinfo = $this->serverGet('https://api.amazon.com/user/profile', array(), null, $headers);
+        $userinfo = self::httpRequest('https://api.amazon.com/user/profile',
+            array('http'=>array('header'=>"Authorization: bearer ".$access_token)), $headers);
         if (!empty($userinfo)){
             return json_decode($userinfo);
         }
         else{
             $error = array(
-                    'provider' => 'Mixi',
+                    'provider' => 'Amazon',
                     'code' => 'userinfo_error',
                     'message' => 'Failed when attempting to query for user information',
                     'raw' => array(
