@@ -5,7 +5,7 @@
 * 
 * More information on Opauth: http://opauth.org
 * 
-* @copyright    Copyright © 2013 Atsushi Yasui (https://github.com/a-yasui)
+* @copyright    Copyright © 2013 Atsushi Yasui (https://twitter.com/a_yasui)
 * @link         http://opauth.org
 * @package      Opauth.AmazonStrategy
 * @license      MIT License
